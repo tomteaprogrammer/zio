@@ -3,11 +3,12 @@ setlocal
 cd /d "%~dp0"
 set "SCRIPT=copypaste.py"
 
-:: Try Python launcher first
-where py >nul 2>nul && (py -3 "%SCRIPT%" %* & goto :eof)
-
-:: Fallback to python on PATH
-where python >nul 2>nul && (python "%SCRIPT%" %* & goto :eof)
-
-echo Python not found. Install Python 3 and try again.
-pause
+:: Always open a visible console and keep it open after running
+if exist "%SystemRoot%\py.exe" (
+  cmd /k py -3 "%SCRIPT%" --enable
+) else if exist "%SystemRoot%\System32\python.exe" (
+  cmd /k python "%SCRIPT%" --enable
+) else (
+  echo Python not found. Install Python 3 from python.org and try again.
+  pause
+)
