@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-# long_paths_toggle.py
-# Toggle Windows long path support by setting:
-# HKLM\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled
+# copypaste.py — Enable/disable/status for Windows LongPathsEnabled
 
-import sys
-import ctypes
+import sys, ctypes
+from pathlib import Path
 import winreg
 
-REG_PATH = r"SYSTEM\CurrentControlSet\Control\FileSystem"
+REG_PATH   = r"SYSTEM\CurrentControlSet\Control\FileSystem"
 VALUE_NAME = "LongPathsEnabled"
 
 def is_admin() -> bool:
@@ -17,7 +15,6 @@ def is_admin() -> bool:
         return False
 
 def elevate_and_rerun():
-    # Relaunch this script with admin rights
     params = " ".join(f'"{a}"' for a in sys.argv[1:])
     ctypes.windll.shell32.ShellExecuteW(
         None, "runas", sys.executable, f'"{sys.argv[0]}" {params}', None, 1
@@ -25,7 +22,6 @@ def elevate_and_rerun():
     sys.exit(0)
 
 def _open_for_write(reg):
-    # Try 64-bit view first (for 32-bit Python on 64-bit Windows), then fallback
     try:
         return winreg.OpenKey(reg, REG_PATH, 0, winreg.KEY_SET_VALUE | winreg.KEY_WOW64_64KEY)
     except Exception:
@@ -56,20 +52,23 @@ def get_status() -> int:
         return 0
 
 def usage():
-    print("Usage: python long_paths_toggle.py [--enable | --disable | --status]")
+    me = Path(sys.argv[0]).name
+    print(f"Usage: python {me} [--enable | --disable | --status]")
     print("  --enable   Set LongPathsEnabled = 1")
     print("  --disable  Set LongPathsEnabled = 0")
     print("  --status   Show current value")
 
 def main():
-    if len(sys.argv) == 1 or sys.argv[1] in ("-h", "--help"):
+    # Default behavior: enable when no args
+    cmd = "--enable" if len(sys.argv) == 1 else sys.argv[1].lower()
+
+    if cmd in ("-h", "--help"):
         usage()
         return
 
     if not is_admin():
         elevate_and_rerun()
 
-    cmd = sys.argv[1].lower()
     if cmd == "--enable":
         set_long_paths(True)
         print(rf"OK: HKLM\{REG_PATH}\{VALUE_NAME} set to 1 (enabled).")
